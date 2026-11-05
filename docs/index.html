@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadence Tracker | IBM RevOps Outreach Hub</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ibm: {
+              50: '#edf5ff',
+              100: '#d0e2ff',
+              200: '#a6c8ff',
+              500: '#0f62fe',
+              600: '#0043ce',
+              700: '#002d9c',
+              800: '#001d6c',
+              900: '#001141',
+            },
+            zi: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              800: '#155e75',
+              900: '#164e63',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <!-- IBM SSO Login Overlay (Shown when unauthenticated) -->
+  <div id="authOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden p-8 space-y-6">
+      
+      <!-- IBM Branding Header -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-sky-500 text-white text-2xl shadow-lg shadow-blue-500/25">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <h2 class="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-700 dark:from-white dark:via-blue-200 dark:to-indigo-300 bg-clip-text text-transparent">
+          Cadence Tracker
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">IBM Revenue Operations & Sales Engagement Hub</p>
+      </div>
+
+      <!-- IBM SSO Sign-in Form -->
+      <div class="space-y-4">
+        <div class="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center space-x-3 text-xs text-blue-800 dark:text-blue-300">
+          <i class="fa-brands fa-openid text-base text-blue-600"></i>
+          <span>Sign in with your <strong>IBM w3id</strong> single sign-on credentials.</span>
+        </div>
+
+        <form id="loginForm" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">IBM Email Address</label>
+            <div class="relative">
+              <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="email" id="loginEmail" required placeholder="your.name@ibm.com" 
+                     class="w-full pl-9 pr-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 font-medium" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Full Name (Optional)</label>
+            <div class="relative">
+              <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="loginName" placeholder="e.g. Nathaniel Pranata" 
+                     class="w-full pl-9 pr-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700" />
+            </div>
+          </div>
+
+          <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold text-sm shadow-md transition transform active:scale-98 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+            <span>Log In with IBM SSO</span>
+          </button>
+        </form>
+
+        <!-- Fast Demo Profile Selector -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700 space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-center">Quick Select IBM Demo Profile:</p>
+          <div class="grid grid-cols-1 gap-1.5" id="demoUserList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- App Title & Icon -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <i class="fa-solid fa-bullseye text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-700 dark:from-white dark:via-blue-200 dark:to-indigo-300 bg-clip-text text-transparent">Cadence Tracker</h1>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800">IBM RevOps</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Track Cadence Types, Targeted States, Roles & ZoomInfo Tags</p>
+          </div>
+        </div>
+
+        <!-- Center Search Bar -->
+        <div class="flex-1 max-w-md mx-4 hidden md:block">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="globalSearchInput" placeholder="Search cadence, state (e.g. CA), role, or ZoomInfo tag..." 
+                   class="w-full pl-10 pr-4 py-2 text-sm bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 transition" />
+            <button id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Action Controls & User Profile -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="btnNewCadence" class="flex items-center space-x-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg shadow-sm font-medium text-sm transition transform active:scale-95">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>New Cadence</span>
+          </button>
+
+          <!-- Export Menu -->
+          <div class="relative inline-block text-left" id="exportDropdownContainer">
+            <button id="btnExportMenu" class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 text-sm transition" title="Export / Import">
+              <i class="fa-solid fa-ellipsis-vertical px-1"></i>
+            </button>
+            <div id="exportMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 dark:divide-slate-700 z-50">
+              <div class="py-1">
+                <button id="btnExportCSV" class="w-full text-left px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2">
+                  <i class="fa-solid fa-file-csv text-emerald-500"></i>
+                  <span>Export to CSV</span>
+                </button>
+                <button id="btnExportJSON" class="w-full text-left px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2">
+                  <i class="fa-solid fa-file-code text-sky-500"></i>
+                  <span>Export to JSON</span>
+                </button>
+              </div>
+              <div class="py-1">
+                <label for="importFileInput" class="w-full text-left px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2 cursor-pointer">
+                  <i class="fa-solid fa-file-import text-amber-500"></i>
+                  <span>Import JSON Backup</span>
+                </label>
+                <input type="file" id="importFileInput" accept=".json" class="hidden" />
+                <button id="btnResetSamples" class="w-full text-left px-4 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center space-x-2">
+                  <i class="fa-solid fa-rotate-left"></i>
+                  <span>Reset Demo Data</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button id="themeToggleBtn" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="Toggle Theme">
+            <i class="fa-solid fa-moon dark:hidden"></i>
+            <i class="fa-solid fa-sun hidden dark:inline"></i>
+          </button>
+
+          <!-- User Profile Dropdown -->
+          <div class="relative inline-block text-left" id="userProfileContainer">
+            <button id="btnUserMenu" class="flex items-center space-x-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition">
+              <div id="userAvatar" class="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                NP
+              </div>
+              <span id="userName" class="text-xs font-semibold text-slate-700 dark:text-slate-200 hidden xl:inline max-w-[120px] truncate">Nathaniel Pranata</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 pr-1"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-64 rounded-xl shadow-xl bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 dark:divide-slate-700 z-50">
+              <div class="p-3">
+                <p id="menuUserFullName" class="text-xs font-bold text-slate-900 dark:text-white truncate">Nathaniel Pranata</p>
+                <p id="menuUserEmail" class="text-[11px] text-blue-600 dark:text-blue-400 truncate font-medium">nathaniel.pranata@ibm.com</p>
+                <p id="menuUserRole" class="text-[10px] text-slate-400 mt-0.5 truncate">Enterprise SDR Lead</p>
+              </div>
+              <div class="py-1">
+                <button id="btnSwitchUser" class="w-full text-left px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2">
+                  <i class="fa-solid fa-users-viewfinder text-blue-500"></i>
+                  <span>Switch IBM Account</span>
+                </button>
+                <button id="btnLogout" class="w-full text-left px-4 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center space-x-2">
+                  <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Search Bar (under header) -->
+    <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 md:hidden">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" id="mobileSearchInput" placeholder="Search cadence, state, role, ZI tag..." 
+               class="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- KPI Metric Cards Grid -->
+    <section class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4" id="statsGrid">
+      
+      <!-- Metric 1: Total Cadences -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-lg bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-paper-plane"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Total Cadences</p>
+          <div class="flex items-baseline space-x-2">
+            <span id="statTotalCadences" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">0</span>
+            <span id="statActiveCadences" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">0 Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric 2: Enrolled Accounts -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Enrolled Accounts</p>
+          <div class="flex items-baseline space-x-2">
+            <span id="statTotalAccounts" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">0</span>
+            <span id="statTotalContacts" class="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">(0 Leads)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric 3: Geographic States Covered -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-3.5 cursor-pointer hover:border-amber-400 transition" id="cardStatesCovered" title="Click to view States Map">
+        <div class="w-11 h-11 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">States Targeted</p>
+          <div class="flex items-baseline space-x-2">
+            <span id="statStatesCovered" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">0</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">/ 50 States</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric 4: Unique Roles Targeted -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-user-tag"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Target Roles</p>
+          <div class="flex items-baseline space-x-2">
+            <span id="statUniqueRoles" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">0</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">Unique Titles</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric 5: ZoomInfo Tags Created -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-3.5 cursor-pointer hover:border-cyan-400 transition col-span-2 sm:col-span-1" id="cardZoomInfoTags" title="Click to view ZoomInfo Tag Catalog">
+        <div class="w-11 h-11 rounded-lg bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-tags"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">ZoomInfo Tags</p>
+          <div class="flex items-baseline space-x-2">
+            <span id="statUniqueTags" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">0</span>
+            <span class="text-xs text-cyan-600 dark:text-cyan-400 font-medium">Applied</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Workspace Scope Selector & View Mode Tabs Bar -->
+    <section class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        
+        <!-- Left: Workspace Scope (My Cadences vs IBM Team Cadences) -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scope:</span>
+          <div class="inline-flex rounded-lg bg-slate-100 dark:bg-slate-900/80 p-1 text-xs">
+            <button data-scope="all" class="scope-btn active px-3 py-1 rounded-md font-semibold text-slate-700 dark:text-slate-300 transition">
+              All Cadences
+            </button>
+            <button data-scope="my" class="scope-btn px-3 py-1 rounded-md font-semibold text-slate-700 dark:text-slate-300 transition">
+              <i class="fa-solid fa-user text-[10px] mr-1"></i>My Cadences
+            </button>
+            <button data-scope="team" class="scope-btn px-3 py-1 rounded-md font-semibold text-slate-700 dark:text-slate-300 transition">
+              <i class="fa-solid fa-users text-[10px] mr-1"></i>Team Shared
+            </button>
+          </div>
+        </div>
+
+        <!-- Center: View Mode Tabs -->
+        <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900/80 p-1 rounded-lg self-start">
+          <button data-view="grid" class="view-tab-btn active px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-2">
+            <i class="fa-solid fa-grip"></i>
+            <span>Cards</span>
+          </button>
+          <button data-view="table" class="view-tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-2">
+            <i class="fa-solid fa-table-list"></i>
+            <span>Table</span>
+          </button>
+          <button data-view="geo" class="view-tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-2">
+            <i class="fa-solid fa-map"></i>
+            <span>States Matrix</span>
+          </button>
+          <button data-view="zitags" class="view-tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-2">
+            <i class="fa-solid fa-tag"></i>
+            <span>ZoomInfo Tags</span>
+          </button>
+        </div>
+
+        <!-- Right: Filter Dropdowns Row -->
+        <div class="flex flex-wrap items-center gap-2">
+          
+          <!-- Filter by Cadence Type -->
+          <div class="flex items-center space-x-1 text-xs">
+            <label class="text-slate-400 text-xs hidden sm:inline font-medium">Type:</label>
+            <select id="filterType" class="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500">
+              <option value="all">All Types</option>
+              <option value="Cold Outbound">Cold Outbound</option>
+              <option value="Account-Based Marketing (ABM)">ABM</option>
+              <option value="Inbound Follow-up">Inbound Follow-up</option>
+              <option value="Event Follow-up">Event Follow-up</option>
+              <option value="Renewal / Expansion">Renewal / Expansion</option>
+              <option value="Executive Outreach">Executive Outreach</option>
+              <option value="Lost Opp Re-engagement">Lost Opp Re-engagement</option>
+            </select>
+          </div>
+
+          <!-- Filter by Status -->
+          <div class="flex items-center space-x-1 text-xs">
+            <label class="text-slate-400 text-xs hidden sm:inline font-medium">Status:</label>
+            <select id="filterStatus" class="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500">
+              <option value="all">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Paused">Paused</option>
+              <option value="Completed">Completed</option>
+              <option value="Draft">Draft</option>
+            </select>
+          </div>
+
+          <!-- Filter by State -->
+          <div class="flex items-center space-x-1 text-xs">
+            <label class="text-slate-400 text-xs hidden sm:inline font-medium">State:</label>
+            <select id="filterState" class="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500">
+              <option value="all">All States</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <button id="btnResetFilters" class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition" title="Clear all filters">
+            <i class="fa-solid fa-filter-circle-xmark mr-1"></i>Clear
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Active Filter Pills (Shown when filters/search active) -->
+      <div id="activeFilterPills" class="hidden flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs text-slate-500">
+        <span class="font-medium mr-1">Active filters:</span>
+        <div id="pillsContainer" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </section>
+
+    <!-- CONTENT VIEW 1: Grid Cards View -->
+    <section id="viewGrid" class="space-y-4">
+      <div id="cadencesGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+      <div id="noResultsGrid" class="hidden py-16 text-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-2xl">
+          <i class="fa-solid fa-filter"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">No cadences match your criteria</h3>
+        <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Try clearing your filters or creating a new cadence with these targeted parameters.</p>
+        <button onclick="document.getElementById('btnResetFilters').click()" class="mt-4 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-semibold rounded-lg transition">
+          Clear All Filters
+        </button>
+      </div>
+    </section>
+
+    <!-- CONTENT VIEW 2: Data Table View -->
+    <section id="viewTable" class="hidden bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+            <tr>
+              <th class="px-4 py-3.5">Cadence Name</th>
+              <th class="px-4 py-3.5">Owner</th>
+              <th class="px-4 py-3.5">Type & Platform</th>
+              <th class="px-4 py-3.5">Status</th>
+              <th class="px-4 py-3.5">Targeted States</th>
+              <th class="px-4 py-3.5">Target Roles</th>
+              <th class="px-4 py-3.5">ZoomInfo Tags</th>
+              <th class="px-4 py-3.5 text-right">Accounts</th>
+              <th class="px-4 py-3.5 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="cadencesTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONTENT VIEW 3: Geographic States Matrix -->
+    <section id="viewGeo" class="hidden bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <i class="fa-solid fa-map-location-dot text-amber-500"></i>
+            <span>US States Cadence Coverage Matrix</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Click any state to view or filter cadences running in that geographic territory.</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs">
+          <span class="flex items-center space-x-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <span class="text-slate-600 dark:text-slate-400">Targeted (3+ cadences)</span>
+          </span>
+          <span class="flex items-center space-x-1.5">
+            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+            <span class="text-slate-600 dark:text-slate-400">Targeted (1-2)</span>
+          </span>
+          <span class="flex items-center space-x-1.5">
+            <span class="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+            <span class="text-slate-600 dark:text-slate-400">Untargeted</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- State Grid of all 50 states -->
+      <div id="statesMatrixGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2.5">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- CONTENT VIEW 4: ZoomInfo Tag Directory -->
+    <section id="viewZITags" class="hidden bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <i class="fa-solid fa-tags text-cyan-500"></i>
+            <span>ZoomInfo Account Tag Command Center</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Catalog of all ZoomInfo tags stamped on accounts across active and completed cadences.</p>
+        </div>
+        <div class="relative w-64">
+          <input type="text" id="tagSearchInput" placeholder="Filter ZoomInfo tags..." 
+                 class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-1 focus:ring-cyan-500" />
+          <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        </div>
+      </div>
+
+      <div id="ziTagsCatalogContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Create / Edit Cadence Modal -->
+  <div id="cadenceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-sm">
+    <div class="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
+            <i class="fa-solid fa-sliders text-base"></i>
+          </div>
+          <div>
+            <h3 id="modalTitle" class="text-base font-bold">New Cadence Configuration</h3>
+            <p class="text-xs text-blue-200">Configure cadence type, geographic states, target roles & ZoomInfo tags</p>
+          </div>
+        </div>
+        <button id="btnCloseModal" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <form id="cadenceForm" class="p-6 overflow-y-auto space-y-6 flex-1">
+        <input type="hidden" id="formCadenceId" value="" />
+
+        <!-- Section 1: Cadence Identity & Metadata -->
+        <div class="space-y-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center space-x-2">
+            <i class="fa-solid fa-circle-info text-blue-500"></i>
+            <span>1. Cadence Identification & Parameters</span>
+          </h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            <!-- Cadence Name -->
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cadence Name <span class="text-rose-500">*</span></label>
+              <input type="text" id="formName" required placeholder="e.g. Q4 FinTech CISO Zero-Trust Outreach" 
+                     class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700" />
+            </div>
+
+            <!-- Cadence Status -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
+              <select id="formStatus" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="Active">Active</option>
+                <option value="Paused">Paused</option>
+                <option value="Completed">Completed</option>
+                <option value="Draft">Draft</option>
+              </select>
+            </div>
+
+            <!-- Cadence Type -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cadence Type <span class="text-rose-500">*</span></label>
+              <div class="space-y-1.5">
+                <select id="formTypeSelect" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="Cold Outbound">Cold Outbound</option>
+                  <option value="Account-Based Marketing (ABM)">Account-Based Marketing (ABM)</option>
+                  <option value="Inbound Follow-up">Inbound Follow-up</option>
+                  <option value="Event Follow-up">Event Follow-up</option>
+                  <option value="Renewal / Expansion">Renewal / Expansion</option>
+                  <option value="Executive Outreach">Executive Outreach</option>
+                  <option value="Lost Opp Re-engagement">Lost Opp Re-engagement</option>
+                  <option value="Partner Nurture">Partner Nurture</option>
+                  <option value="__custom__">+ Custom Type...</option>
+                </select>
+                <input type="text" id="formCustomType" placeholder="Enter custom cadence type" class="hidden w-full px-3.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg" />
+              </div>
+            </div>
+
+            <!-- Engagement Platform -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Platform / Tool</label>
+              <select id="formPlatform" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="Salesloft">Salesloft</option>
+                <option value="Outreach">Outreach</option>
+                <option value="HubSpot">HubSpot</option>
+                <option value="Apollo">Apollo.io</option>
+                <option value="Gong">Gong Engage</option>
+                <option value="Lemlist">Lemlist</option>
+                <option value="Salesforce High Velocity">Salesforce High Velocity</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Target Industry / Vertical -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Target Industry / Niche</label>
+              <input type="text" id="formIndustry" placeholder="e.g. FinTech, Healthcare, Enterprise SaaS" 
+                     class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <!-- Step Count & Duration -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Steps</label>
+                <input type="number" id="formStepCount" min="1" max="30" value="6" 
+                       class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Days</label>
+                <input type="number" id="formDurationDays" min="1" max="90" value="14" 
+                       class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+
+            <!-- Enrolled Accounts & Leads -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Accounts</label>
+                <input type="number" id="formAccounts" min="0" value="0" 
+                       class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Contacts</label>
+                <input type="number" id="formContacts" min="0" value="0" 
+                       class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+
+            <!-- Team Sharing Option -->
+            <div class="flex items-center space-x-2 pt-6">
+              <input type="checkbox" id="formIsShared" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+              <label for="formIsShared" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                Share with IBM Team Workspace
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <hr class="border-slate-200 dark:border-slate-700" />
+
+        <!-- Section 2: Targeted US States (Geographic Selector) -->
+        <div class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center space-x-2">
+              <i class="fa-solid fa-map-pin text-amber-500"></i>
+              <span>2. Targeted Geographic States (<span id="selectedStateCount">0</span> selected)</span>
+            </h4>
+            <!-- Quick Region Preset Selectors -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+              <span class="text-slate-400 text-xs">Quick Select:</span>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 rounded font-medium transition" data-region="west">West</button>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 rounded font-medium transition" data-region="northeast">Northeast</button>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 rounded font-medium transition" data-region="midwest">Midwest</button>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 rounded font-medium transition" data-region="south">South</button>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 rounded font-medium transition" data-region="all">All 50</button>
+              <button type="button" class="region-preset-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded font-medium transition" data-region="clear">Clear</button>
+            </div>
+          </div>
+
+          <!-- Interactive State Chips Matrix in Form -->
+          <div id="formStatesSelector" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 p-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-xl max-h-48 overflow-y-auto">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <hr class="border-slate-200 dark:border-slate-700" />
+
+        <!-- Section 3: Targeted Job Roles & Personas -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center space-x-2">
+            <i class="fa-solid fa-id-card-clip text-emerald-500"></i>
+            <span>3. Targeted Job Roles & Personas</span>
+          </h4>
+
+          <div class="space-y-2">
+            <!-- Role Input & Add Button -->
+            <div class="flex items-center space-x-2">
+              <div class="relative flex-1">
+                <input type="text" id="formRoleInput" placeholder="Type a job role (e.g. Chief Information Security Officer, VP Sales, Director of IT)..." 
+                       class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <button type="button" id="btnAddRole" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Role</span>
+              </button>
+            </div>
+
+            <!-- Quick Suggestions for B2B Roles -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 pt-1">
+              <span class="font-medium text-slate-400 text-xs">Suggestions:</span>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">CISO</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">VP of Sales</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">CTO</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">Director of IT</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">Head of RevOps</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">Chief Revenue Officer (CRO)</button>
+              <button type="button" class="role-sugg-btn px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded text-slate-700 dark:text-slate-300 font-medium">VP of Engineering</button>
+            </div>
+
+            <!-- Active Roles Badges Container -->
+            <div id="formRolesContainer" class="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[52px]">
+              <span class="text-xs text-slate-400 italic self-center">No roles added yet. Type or click suggestions above.</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-200 dark:border-slate-700" />
+
+        <!-- Section 4: ZoomInfo Tags Stamped on Accounts -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center space-x-2">
+              <i class="fa-solid fa-tags text-cyan-500"></i>
+              <span>4. ZoomInfo Tags Applied to Accounts</span>
+            </h4>
+            <span class="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">ZoomInfo Tagging Schema</span>
+          </div>
+
+          <div class="space-y-2">
+            <!-- ZoomInfo Tag Input & Add Button -->
+            <div class="flex items-center space-x-2">
+              <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-600 dark:text-cyan-400 font-bold text-xs">ZI:</span>
+                <input type="text" id="formZITagInput" placeholder="Tag name (e.g. Tier1-Enterprise, High-Intent-Cloud, Series-B-Funded)..." 
+                       class="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500" />
+              </div>
+              <button type="button" id="btnAddZITag" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add ZoomInfo Tag</span>
+              </button>
+            </div>
+
+            <!-- Quick Suggestions for ZoomInfo Tags -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 pt-1">
+              <span class="font-medium text-slate-400 text-xs">Presets:</span>
+              <button type="button" class="zi-sugg-btn px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 rounded font-medium border border-cyan-200 dark:border-cyan-800">ZI:Tier1-Enterprise</button>
+              <button type="button" class="zi-sugg-btn px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 rounded font-medium border border-cyan-200 dark:border-cyan-800">ZI:High-Intent-Cloud-Sec</button>
+              <button type="button" class="zi-sugg-btn px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 rounded font-medium border border-cyan-200 dark:border-cyan-800">ZI:Growth-SaaS-Series-B-C</button>
+              <button type="button" class="zi-sugg-btn px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 rounded font-medium border border-cyan-200 dark:border-cyan-800">ZI:Executive-Leadership-Change</button>
+              <button type="button" class="zi-sugg-btn px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 rounded font-medium border border-cyan-200 dark:border-cyan-800">ZI:Contract-Renewal-90-Days</button>
+            </div>
+
+            <!-- Active ZoomInfo Tags Badges Container -->
+            <div id="formZITagsContainer" class="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[52px]">
+              <span class="text-xs text-slate-400 italic self-center">No ZoomInfo tags added yet. Type tag or click presets above.</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-200 dark:border-slate-700" />
+
+        <!-- Section 5: Cadence Strategy & Notes -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center space-x-2">
+            <i class="fa-solid fa-notes-medical text-indigo-500"></i>
+            <span>5. Strategy, Triggers & SDR Notes</span>
+          </h4>
+          <textarea id="formNotes" rows="3" placeholder="Describe the trigger criteria, ZoomInfo intent topic surges, key messaging angle, or SDR execution guidelines..." 
+                    class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+      </form>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
+        <button type="button" id="btnCancelModal" class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition">
+          Cancel
+        </button>
+        <button type="button" id="btnSaveCadence" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-sm font-semibold shadow-md transition transform active:scale-95 flex items-center space-x-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Save Cadence</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: View Cadence Details Modal -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-sm">
+    <div class="relative w-full max-w-3xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      
+      <!-- Detail Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white flex items-center justify-between flex-shrink-0">
+        <div class="min-w-0 pr-4">
+          <div class="flex items-center space-x-2 mb-1">
+            <span id="detailTypeBadge" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-500 text-white">Cold Outbound</span>
+            <span id="detailStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500 text-white">Active</span>
+            <span id="detailPlatformBadge" class="text-xs px-2 py-0.5 rounded-md bg-white/10 text-slate-200 font-medium">Salesloft</span>
+          </div>
+          <h3 id="detailName" class="text-lg font-bold truncate text-white">Cadence Name</h3>
+          <p id="detailCreator" class="text-xs text-blue-200 mt-0.5">Created by: Nathaniel Pranata</p>
+        </div>
+        <button id="btnCloseDetailModal" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Detail Body -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
+        
+        <!-- Summary Stats Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+          <div>
+            <p class="text-xs text-slate-400">Enrolled Accounts</p>
+            <p id="detailAccounts" class="text-base font-bold text-slate-900 dark:text-white">0</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Total Contacts</p>
+            <p id="detailContacts" class="text-base font-bold text-slate-900 dark:text-white">0</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Cadence Length</p>
+            <p id="detailDuration" class="text-base font-bold text-slate-900 dark:text-white">14 Days (6 Steps)</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Target Industry</p>
+            <p id="detailIndustry" class="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate mt-1">Cross-Industry</p>
+          </div>
+        </div>
+
+        <!-- Targeted States Section -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
+            <i class="fa-solid fa-map-pin text-amber-500"></i>
+            <span>Targeted Geographic States</span>
+          </h4>
+          <div id="detailStatesContainer" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <!-- Targeted Roles Section -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
+            <i class="fa-solid fa-id-card-clip text-emerald-500"></i>
+            <span>Targeted Job Roles & Personas</span>
+          </h4>
+          <div id="detailRolesContainer" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- ZoomInfo Tags Section -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
+            <i class="fa-solid fa-tags text-cyan-500"></i>
+            <span>ZoomInfo Account Tags Created</span>
+          </h4>
+          <div id="detailZITagsContainer" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Sequence Step Flow (if available) -->
+        <div id="detailSequenceSection">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
+            <i class="fa-solid fa-route text-blue-500"></i>
+            <span>Touchpoint Sequence Flow</span>
+          </h4>
+          <div id="detailSequenceTimeline" class="space-y-2"></div>
+        </div>
+
+        <!-- Strategy Notes -->
+        <div id="detailNotesSection">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
+            <i class="fa-solid fa-file-lines text-indigo-500"></i>
+            <span>Strategy & Execution Notes</span>
+          </h4>
+          <div id="detailNotes" class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs leading-relaxed"></div>
+        </div>
+
+      </div>
+
+      <!-- Detail Footer Actions -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
+        <button id="btnDetailDelete" class="px-3.5 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg font-medium transition">
+          <i class="fa-solid fa-trash-can mr-1"></i>Delete
+        </button>
+        <div class="flex items-center space-x-2">
+          <button id="btnDetailClone" class="px-3.5 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-medium transition">
+            <i class="fa-solid fa-copy mr-1"></i>Duplicate
+          </button>
+          <button id="btnDetailEdit" class="px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition">
+            <i class="fa-solid fa-pen-to-square mr-1"></i>Edit Cadence
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
