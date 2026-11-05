@@ -1,0 +1,23 @@
+# Environment and secrets
+.env
+*.env
+*.pem
+*.key
+
+# Database
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
